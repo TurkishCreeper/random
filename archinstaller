@@ -74,6 +74,8 @@ clear
 
 /usr/sbin/parted /dev/$installdrive mklabel gpt 
 /usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 0% 550MiB 
+/usr/sbin/parted /dev/$install drive set 1 boot on
+/usr/sbin/parted /dev/$install drive set 1 esp on
 
 if [ $homeseperate = yes ]; then
 	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 550MiB 32GiB
@@ -135,7 +137,6 @@ if [ "$homefstype" = btrfs ]; then
 		/bin/echo "Created home filesystem"		
 fi
 
-fi
 if [ "$homeseperate" = yes ]; then
 		/bin/mount $rootfs /mnt
 		/bin/mkdir /mnt/home
@@ -185,7 +186,10 @@ read extrapackages
 
 # Install systemd-boot
 /bin/arch-chroot /mnt bootctl --path=/boot install
+
 # Create a pacman hook to auto-update systemd-boot when a systemd update occurs
+/bin/arch-chroot /mnt mkdir -p /etc/pacman.d/hooks/
+/bin/arch-chroot /mnt /etc/pacman.d/hooks/100-systemd-boot.hook
 /bin/arch-chroot /mnt echo "[Trigger]" >> /etc/pacman.d/hooks/100-systemd-boot.hook
 /bin/arch-chroot /mnt echo "Type = package" >> /etc/pacman.d/hooks/100-systemd-boot.hook
 /bin/arch-chroot /mnt echo "Operation = Upgrade" >> /etc/pacman.d/hooks/100-systemd-boot.hook
@@ -198,15 +202,18 @@ read extrapackages
 
 # Set up systemd-boots configuration files 
 /bin/arch-chroot /mnt mkdir -p /boot/loader/entries
+/bin/arch-chroot /mnt touch /boot/loader/loader.conf
 /bin/arch-chroot /mnt echo "default  arch" >> /boot/loader/loader.conf
 /bin/arch-chroot /mnt echo "timeout 4" >> /boot/loader/loader.conf
 
+/bin/arch-chroot /mnt touch /boot/loader/entries/arch.conf
+/bin/arch-chroot /mnt mkdir -p /boot/loader/entries/
 /bin/arch-chroot /mnt echo "title	Arch Linux" >> /boot/loader/entries/arch.conf
 /bin/arch-chroot /mnt echo "linux	/vmlinuz-linux" >> /boot/loader/entries/arch.conf
 /bin/arch-chroot /mnt echo "initrd	/$microcode" >> /boot/loader/entries/arch.conf
 /bin/arch-chroot /mnt echo "initrd	/initramfs-linux.img" >> /boot/loader/entries/arch.conf
 
-/bin/echo -n "Enter xtra boot options, leave blank if none. (ex. 'pci=nomsi nomodeset' ): "
+/bin/echo -n "Enter extra boot options, leave blank if none. (ex. 'pci=nomsi nomodeset' ): "
 read extrabootflags
 
 /bin/arch-chroot /mnt echo "options	rw root=$rootfs $extrabootflags" >> /boot/loader/entries/arch.conf
