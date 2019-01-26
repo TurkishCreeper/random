@@ -15,6 +15,7 @@ cd /usr/share/kbd/keymaps/i386 && ls --color=auto */*.map.gz
 /bin/echo ""
 /bin/echo -n "Write the name of the keyboard layout you want to use, then press (Do not include before the ''/'' or the extension ex. trq)[ENTER]: "
 read keymap
+clear
 /bin/echo "Chosen keymap: " $keymap && cd 
 /usr/bin/loadkeys $keymap || { /bin/echo "ERROR: Wrong keyboard layout"; exit 1; }
 
@@ -25,7 +26,7 @@ This tool only works in UEFI, if your system is UEFI capable, try disabling \"Le
 /bin/ping 1.1.1.1 -c1 || { /bin/echo "ERROR: Network not available"; exit 1; }
 /bin/echo "Network: Available"
 /sbin/fdisk -l 
-/bin/echo "!!This installer cannot dualboot!! !!The WHOLE drive would be used!! (wait 5 seconds)" && sleep 5
+/bin/echo "!! This installer cannot dualboot !! !! The WHOLE drive would be used !! (Wait 5 seconds)" && sleep 5
 /bin/echo -n "Write the path of the drive you want to install on, then press [ENTER]: /dev/"
 read installdrive
 /bin/echo "Chosen drive: /dev/" $installdrive
