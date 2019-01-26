@@ -33,7 +33,7 @@ if [ $sizeofdrive \< 20 ];
 			echo "WARNING: Drive is smaller then 20G, A bigger drive is recommended, installing anyway.";
 fi;
 
-if [ 80 \> $sizeofdrive ]; then
+if [ 80 \< $sizeofdrive ]; then
 		/bin/echo -n "Should /home be seperate? Type y or n (Nothing else) [Y/n] "
 		read homeseperate
 	
@@ -60,7 +60,98 @@ fi
 if [ $homeseperate = yes ]; then
 	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 550MiB 32GiB
 	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 32GiB 100%
+	/bin/echo -n "What filesystem do you want / to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS] "
+	read rootfstype
+	rootfstype=${rootfstype,,}
+	if ! { [ "$rootfstype" = ext4 ] || [ "$rootfstype" = ext3  ] || [ "$rootfstype" = ext2 ] || [ "$rootfstype" = btrfs ] || [ "$rootfstype" = jfs ] || [ "$rootfstype" = xfs ] || [ "$rootfstype" = reiserfs ]; }; then
+		/bin/echo "Wrong filesystem type"; exit 1	
+	fi
+	/bin/echo -n "What filesystem do you want /home to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS]"
+	read homefstype
+	homefstype=${homefstype,,}
+	if ! { [ "$homefstype" = ext4 ] || [ "$homefstype" = ext3  ] || [ "$homefstype" = ext2 ] || [ "$homefstype" = btrfs ] || [ "$homefstype" = jfs ] || [ "$homefstype" = xfs ] || [ "$homefstype" = reiserfs ]; }; then
+		/bin/echo "Wrong filesystem type"; exit 1	
+	fi
+	/bin/echo "/home Filesytem:" $homefstype
+	rootfs="/dev/$installdrive"2
+	homefs="/dev/$installdrive"3
 fi
+
 if [ $homeseperate = no ]; then
 	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 550MiB 100%
+	/bin/echo -n "What filesystem do you want / to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS] "
+	read rootfstype
+	rootfstype=${rootfstype,,}
+	rootfs="/dev/$installdrive"2
 fi 
+
+
+
+/bin/echo "Root Filesystem:" $rootfstype
+echo "Creating a FAT32 filesystem fro the ESP.."
+filesystemtools="$filesystemtools dosfstools"
+mkfs.fat -F32 "$installdrive"1
+
+if [ $rootfstype = ext4 ]; then
+	echo "Creating a ext4 filesystem at" $rootfs
+	mkfs.ext4 $rootfs 
+fi
+
+if [ $rootfstype = ext3 ]; then
+	echo "Creating a ext3 filesystem at" $rootfs
+	mkfs.ext3 $rootfs
+fi
+
+if [ $rootfstype = ext2 ]; then
+	echo "Creating a ext2 filesystem at" $rootfs
+	mkfs.ext2 $rootfs 
+fi
+
+if [ $rootfstype = btrfs ]; then
+	echo "Creating a BTRFS filesystem at" $rootfs
+	filesystemtools="$filesystemtools btrfs-progs"
+	mkfs.btrfs $rootfs 
+fi
+
+if [ $rootfstype = xfs ]; then
+	mkfs.xfs $rootfs 
+fi
+
+if [ $rootfstype = jfs ]; then
+	mkfs.jfs $rootfs 
+fi
+/bin/echo "Created Root filesystem."
+
+if [ $homefstype = ext4 ]; then
+	echo "Creating a ext4 filesystem at" $rootfs
+	mkfs.ext4 $homefs
+fi
+
+if [ $homefstype = ext3 ]; then
+	echo "Creating a ext3 filesystem at" $rootfs
+	mkfs.ext3 $homefs
+fi
+
+if [ $homefstype = ext2 ]; then
+	echo "Creating a ext2 filesystem at" $rootfs
+	mkfs.ext2 $homefs 
+fi
+
+if [ $homefstype = btrfs ]; then
+	echo "Creating a Btrfs filesystem at" $rootfs
+	filesystemtools="$filesystemtools btrfs-progs"
+	mkfs.btrfs $homefs 
+fi
+
+if [ $homefstype = xfs ]; then
+	echo "Creating a XFS filesystem at" $rootfs
+	mkfs.xfs $homefs 
+fi
+
+if [ $homefstype = jfs ]; then
+	echo "Creating a JFS filesystem at" $rootfs
+	mkfs.jfs $homefs
+fi
+if [ $homeseperate = yes ]; then
+	/bin/echo "Created home filesystem"
+fi
