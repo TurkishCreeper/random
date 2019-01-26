@@ -4,6 +4,7 @@
 
 cd /usr/share/kbd/keymaps/i386 && ls */*.map.gz
 /bin/echo ""
-/bin/echo -n "Write the name of the keymap you use, then press [ENTER]: "
+/bin/echo -n "Write the name of the keyboard layout you want to use, then press [ENTER]: "
 read keymap
-echo $keymap 
+/bin/echo `Chosen keymap: $keymap` && cd 
+/bin/loadkeys $keymap || echo "ERROR: Wrong keyboard layout"; exit 1
