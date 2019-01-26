@@ -53,6 +53,9 @@ fi
 /bin/echo "This is the last warning!  The installer will start installing on /dev/"$installdrive" in 10 seconds"
 /bin/sleep 10
 /bin/echo ""
+/bin/umount /mnt/boot/ &> /dev/null && echo "Installation ESP unmounted"
+/bin/umount /mnt/home/ &> /dev/null && echo "Installation Home unmounted"
+/bin/umount /mnt/ &> /dev/null && echo "Installation root unmounted"
 
 /usr/sbin/parted /dev/$installdrive mklabel gpt 
 /usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 0% 550MiB 
@@ -90,7 +93,7 @@ fi
 
 /bin/echo "Creating a FAT32 filesystem fro the ESP.."
 filesystemtools="$filesystemtools dosfstools"
-/usr/sbin/mkfs.fat -F32 "$installdrive"1
+/usr/sbin/mkfs.fat -F32 /bin/"$installdrive"1
 
 if [ "$rootfstype" = ext4 ]; then
 	echo "Creating a ext4 filesystem at" $rootfs
@@ -140,7 +143,7 @@ fi
 if [ "$homefstype" = btrfs ]; then
 	echo "Creating a Btrfs filesystem at" $rootfs
 	filesystemtools="$filesystemtools btrfs-progs"
-	/sbin/mkfs -t btrfs $homefs 
+	/sbin/mkfs -t btrfs -f $homefs 
 fi
 
 if [ "$homefstype" = xfs ]; then
@@ -161,7 +164,7 @@ if [ "$homeseperate" = yes ]; then
 		/bin/mount $rootfs /mnt
 fi
 
-/bin/mkdir /mnt/boot
+/bin/mkdir -p /mnt/boot
 /bin/mount /dev/"$installdrive"1 /mnt/boot
 
 /bin/echo "Partitioning is done!"
