@@ -1,0 +1,9 @@
+#!/bin/bash
+
+/bin/echo "Installer 0.1"
+
+cd /usr/share/kbd/keymaps/i386 && ls */*.map.gz
+/bin/echo ""
+/bin/echo -n "Write the name of the keymap you use, then press [ENTER]: "
+read keymap
+echo $keymap 
