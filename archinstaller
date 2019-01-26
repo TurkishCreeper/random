@@ -8,13 +8,13 @@ cd /usr/share/kbd/keymaps/i386 && ls --color=auto */*.map.gz
 /bin/echo -n "Write the name of the keyboard layout you want to use, then press [ENTER]: "
 read keymap
 /bin/echo "Chosen keymap: " $keymap && cd 
-/usr/bin/loadkeys $keymap || echo "ERROR: Wrong keyboard layout"; exit 1
-ls /sys/firmware/efi/efivars &>/dev/null || /bin/echo "ERROR: System is booted in BIOS or CSM mode. \
-This tool only works in UEFI, if your system is UEFI capable, try disabling \"Legacy Support\" or \"Compatibility Support Module (CSM)\""; exit 1
+/usr/bin/loadkeys $keymap || { /bin/echo "ERROR: Wrong keyboard layout"; exit 1; }
+ls /sys/firmware/efi/efivars &>/dev/null || { /bin/echo "ERROR: System is booted in BIOS or CSM mode. \
+This tool only works in UEFI, if your system is UEFI capable, try disabling \"Legacy Support\" or \"Compatibility Support Module (CSM)\""; exit 1 }
 
 /bin/echo "Boot mode: UEFI"
 /bin/echo "Synchronizing system clock" && timedatectl set-ntp true
-/bin/ping 1.1.1.1 -c1 || /bin/echo "ERROR: Network not available"; exit 1
+/bin/ping 1.1.1.1 -c1 || { /bin/echo "ERROR: Network not available"; exit 1 }
 /bin/echo "Network: Available"
 /sbin/fdisk -l 
 /bin/echo "!!This installer cannot dualboot!! !!The WHOLE drive would be used!! (wait 2 seconds)" && sleep 2
