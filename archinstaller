@@ -1,16 +1,59 @@
 #!/bin/bash
+/bin/echo "WARNING: This installer isn't complete! Do NOT use for actual system installers for now"
+/bin/echo "TCreeper's Unofficial ArchInstaller 0.1
+"
 
-/bin/echo "TCreeper's ArchInstaller 0.1 \n"
-
-cd /usr/share/kbd/keymaps/i386 && ls --color=auto */*.map.gz || /bin/echo "ERROR: Not found."; exit 1
+cd /usr/share/kbd/keymaps/i386 && ls --color=auto */*.map.gz
 /bin/echo ""
 /bin/echo -n "Write the name of the keyboard layout you want to use, then press [ENTER]: "
 read keymap
 /bin/echo "Chosen keymap: " $keymap && cd 
-/bin/loadkeys $keymap || echo "ERROR: Wrong keyboard layout"; exit 1
+/usr/bin/loadkeys $keymap || echo "ERROR: Wrong keyboard layout"; exit 1
 ls /sys/firmware/efi/efivars &>/dev/null || /bin/echo "ERROR: System is booted in BIOS or CSM mode. \
 This tool only works in UEFI, if your system is UEFI capable, try disabling \"Legacy Support\" or \"Compatibility Support Module (CSM)\""; exit 1
 
-/bin/echo "Boot mode: is UEFI"
+/bin/echo "Boot mode: UEFI"
 /bin/echo "Synchronizing system clock" && timedatectl set-ntp true
 /bin/ping 1.1.1.1 -c1 || /bin/echo "ERROR: Network not available"; exit 1
+/bin/echo "Network: Available"
+/sbin/fdisk -l 
+/bin/echo "!!This installer cannot dualboot!! !!The WHOLE drive would be used!! (wait 2 seconds)" && sleep 2
+/bin/echo -n "Write the path of the drive you want to install on, then press [ENTER]: /dev/"
+read installdrive
+/bin/echo "Chosen drive: /dev/" $installdrive
+
+sizeofdrive=$( /bin/df -h /dev/$installdrive --output=size -BG | sed -n 2p | tr -d 'G' )
+
+if [ $sizeofdrive \< 20 ];
+then
+   if [ $sizeofdrive \< 8 ];
+   then
+   		echo "ERROR: Drive is smaller then 8G, aborting, if you want to continue remove this line"; exit 1
+   else
+	echo "WARNING: Drive is smaller then 20G, A bigger drive is recommended, installing anyway.";
+fi;
+
+if [ $sizeofdrive \> 32 ];
+then
+	/bin/echo -n "Should /home be seperate? Type y or n (Nothing else) [Y/n] "
+	read homeseperate
+	
+	if [ $homeseperate != n]; 
+	then
+		homeseperate=yes && echo
+		
+		else
+		homeseperate=no
+	fi
+fi
+
+if [ $homeseperate = yes]; then
+   echo "/home: Seperate from /"
+   else
+   echo "/home: Not seperate"
+
+/bin/echo -n "This is the last warning!  The installer will start installing on /dev/" $installdrive " in 5 seconds"
+/bin/sleep 5
+
+# /usr/sbin/parted /dev/$installdrive mklabel gpt 
+# /usr/sbin/parted -a optimal mkpart primary 0% 550MiB 
