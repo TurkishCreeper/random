@@ -7,13 +7,12 @@
 
 
 /bin/echo "WARNING: This installer isn't complete! Do NOT use for actual system installers for now."
-/bin/echo "==================================================="
-/bin/echo "~~~~~~TCreeper's Unofficial ArchInstaller 0.7~~~~~~"
-/bin/echo "==================================================="
+/bin/echo "===================================================" && sleep 0.1
+/bin/echo "~~~~~~TCreeper's Unofficial ArchInstaller 0.7~~~~~~" && sleep 0.1
+/bin/echo "===================================================" && sleep 0.1
 
 cd /usr/share/kbd/keymaps/i386 && ls --color=auto */*.map.gz 
-/bin/echo ""
-/bin/echo -n "Write the name of the keyboard layout you want to use, then press (Do not include before the ''/'' or the extension ex. trq)[ENTER]: "
+/bin/echo -n "Write the name of the keyboard layout you want to use, then press (Do not include before the /' or the extension example: trq)[ENTER]: "
 read keymap
 clear
 /bin/echo "Chosen keymap: " $keymap && cd 
@@ -68,7 +67,7 @@ fi
 
 /bin/echo "This is the last warning!  The installer will start installing on /dev/"$installdrive" in 10 seconds"
 /bin/sleep 10
-/bin/echo ""
+clear
 /bin/umount /mnt/boot/ &> /dev/null && echo "Installation ESP unmounted"
 /bin/umount /mnt/home/ &> /dev/null && echo "Installation Home unmounted"
 /bin/umount /mnt/ &> /dev/null && echo "Installation root unmounted"
@@ -79,13 +78,13 @@ fi
 if [ $homeseperate = yes ]; then
 	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 550MiB 32GiB
 	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 32GiB 100%
-	/bin/echo -n "What filesystem do you want / to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS] "
+	/bin/echo -n "What filesystem do you want / to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS]: "
 	read rootfstype
 	rootfstype=${rootfstype,,}
 	if ! { [ "$rootfstype" = ext4 ] || [ "$rootfstype" = ext3  ] || [ "$rootfstype" = ext2 ] || [ "$rootfstype" = btrfs ] || [ "$rootfstype" = jfs ] || [ "$rootfstype" = xfs ] || [ "$rootfstype" = reiserfs ]; }; then
 		/bin/echo "Wrong filesystem type"; exit 1	
 	fi
-	/bin/echo -n "What filesystem do you want /home to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS]"
+	/bin/echo -n "What filesystem do you want /home to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS]: "
 	read homefstype
 	homefstype=${homefstype,,}
 	if ! { [ "$homefstype" = ext4 ] || [ "$homefstype" = ext3  ] || [ "$homefstype" = ext2 ] || [ "$homefstype" = btrfs ] || [ "$homefstype" = jfs ] || [ "$homefstype" = xfs ] || [ "$homefstype" = reiserfs ]; }; then
@@ -98,9 +97,12 @@ fi
 
 if [ $homeseperate = no ]; then
 	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 550MiB 100%
-	/bin/echo -n "What filesystem do you want / to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS] "
+	/bin/echo -n "What filesystem do you want / to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS]: "
 	read rootfstype
 	rootfstype=${rootfstype,,}
+	if ! { [ "$rootfstype" = ext4 ] || [ "$rootfstype" = ext3  ] || [ "$rootfstype" = ext2 ] || [ "$rootfstype" = btrfs ] || [ "$rootfstype" = jfs ] || [ "$rootfstype" = xfs ] || [ "$rootfstype" = reiserfs ]; }; then
+		/bin/echo "Wrong filesystem type"; exit 1	
+	fi
 	rootfs="/dev/$installdrive"2
 fi 
 
@@ -112,23 +114,23 @@ filesystemtools="$filesystemtools dosfstools"
 /usr/sbin/mkfs.fat -F32 /bin/"$installdrive"1
 
 if [ "$rootfstype" = btrfs ]; then
-		echo "Creating a Btrfs filesystem at " $rootfs
+		echo "Creating a Btrfs filesystem at $rootfs"
 		filesystemtools="$filesystemtools btrfs-progs"
-		/sbin/mkfs -t btrfs $rootfs
+		/sbin/mkfs -t btrfs -f $rootfs
 		/bin/echo "Created Root filesystem."
 	else
-		echo "Creating a '$rootfstype' filesystem at " $rootfs
+		echo "Creating a '$rootfstype' filesystem at $rootfs"
 		/sbin/mkfs -t $rootfstype $rootfs
 		/bin/echo "Created Root filesystem."
 fi
 
 if [ "$homefstype" = btrfs ]; then
-		echo "Creating a Btrfs filesystem at" $homefs
+		echo "Creating a Btrfs filesystem at $homefs"
 		filesystemtools="$filesystemtools btrfs-progs"
 		/sbin/mkfs -t btrfs -f $homefs
 		/bin/echo "Created home filesystem"
 	else
-		echo "Creating a '$homefstype' filesystem at " $homefs
+		echo "Creating a '$homefstype' filesystem at  $homefs"
 		/sbin/mkfs -t $homefstype $homefs
 		/bin/echo "Created home filesystem"		
 fi
@@ -145,11 +147,11 @@ fi
 /bin/mkdir -p /mnt/boot
 /bin/mount /dev/"$installdrive"1 /mnt/boot
 
-/bin/echo "Partitioning is done!"
+/bin/echo "Partitioning is done!" && sleep 3 && clear
 /bin/echo "If you want more packages to be installed add them now, if you don't leave it blank (base base-devel and pacman-contrib will be installed by default)"
 /bin/echo -n "Seperate with spaces, to finish press [ENTER]: "
 read extrapackages
-/bin/echo "Installing the system"
+/bin/echo "Installing the system.."
 /bin/pacstrap /mnt base base-devel $filesystemtools pacman-contrib $extrapackages
 /bin/echo "Creating fstab via genfstab"
 /bin/genfstab -U /mnt >> /mnt/etc/fstab
