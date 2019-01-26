@@ -1,10 +1,16 @@
 #!/bin/bash
 
-/bin/echo "Installer 0.1"
+/bin/echo "TCreeper's ArchInstaller 0.1 \n"
 
-cd /usr/share/kbd/keymaps/i386 && ls */*.map.gz
+cd /usr/share/kbd/keymaps/i386 && ls --color=auto */*.map.gz || /bin/echo "ERROR: Not found."; exit 1
 /bin/echo ""
 /bin/echo -n "Write the name of the keyboard layout you want to use, then press [ENTER]: "
 read keymap
-/bin/echo `Chosen keymap: $keymap` && cd 
+/bin/echo "Chosen keymap: " $keymap && cd 
 /bin/loadkeys $keymap || echo "ERROR: Wrong keyboard layout"; exit 1
+ls /sys/firmware/efi/efivars &>/dev/null || /bin/echo "ERROR: System is booted in BIOS or CSM mode. \
+This tool only works in UEFI, if your system is UEFI capable, try disabling \"Legacy Support\" or \"Compatibility Support Module (CSM)\""; exit 1
+
+/bin/echo "Boot mode: is UEFI"
+/bin/echo "Synchronizing system clock" && timedatectl set-ntp true
+/bin/ping 1.1.1.1 -c1 || /bin/echo "ERROR: Network not available"; exit 1
