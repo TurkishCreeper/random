@@ -86,72 +86,82 @@ if [ $homeseperate = no ]; then
 fi 
 
 
-
 /bin/echo "Root Filesystem:" $rootfstype
-echo "Creating a FAT32 filesystem fro the ESP.."
+
+/bin/echo "Creating a FAT32 filesystem fro the ESP.."
 filesystemtools="$filesystemtools dosfstools"
-mkfs.fat -F32 "$installdrive"1
+/usr/sbin/mkfs.fat -F32 "$installdrive"1
 
-if [ $rootfstype = ext4 ]; then
+if [ "$rootfstype" = ext4 ]; then
 	echo "Creating a ext4 filesystem at" $rootfs
-	mkfs.ext4 $rootfs 
+	/sbin/mkfs -t ext4 $rootfs 
 fi
 
-if [ $rootfstype = ext3 ]; then
+if [ "$rootfstype" = ext3 ]; then
 	echo "Creating a ext3 filesystem at" $rootfs
-	mkfs.ext3 $rootfs
+	/sbin/mkfs -t ext3 $rootfs
 fi
 
-if [ $rootfstype = ext2 ]; then
+if [ "$rootfstype" = ext2 ]; then
 	echo "Creating a ext2 filesystem at" $rootfs
-	mkfs.ext2 $rootfs 
+	/sbin/mkfs -t ext2 $rootfs 
 fi
 
-if [ $rootfstype = btrfs ]; then
+if [ "$rootfstype" = btrfs ]; then
 	echo "Creating a BTRFS filesystem at" $rootfs
 	filesystemtools="$filesystemtools btrfs-progs"
-	mkfs.btrfs $rootfs 
+	/sbin/mkfs -t btrfs $rootfs
 fi
 
-if [ $rootfstype = xfs ]; then
-	mkfs.xfs $rootfs 
+if [ "$rootfstype" = xfs ]; then
+	/sbin/mkfs -t xfs $rootfs 
 fi
 
-if [ $rootfstype = jfs ]; then
-	mkfs.jfs $rootfs 
+if [ "$rootfstype" = jfs ]; then
+	/sbin/mkfs -t jfs $rootfs 
 fi
 /bin/echo "Created Root filesystem."
 
-if [ $homefstype = ext4 ]; then
+if [ "$homefstype" = ext4 ]; then
 	echo "Creating a ext4 filesystem at" $rootfs
-	mkfs.ext4 $homefs
+	/sbin/mkfs -t ext4 $homefs
 fi
 
-if [ $homefstype = ext3 ]; then
+if [ "$homefstype" = ext3 ]; then
 	echo "Creating a ext3 filesystem at" $rootfs
-	mkfs.ext3 $homefs
+	/sbin/mkfs -t ext3 $homefs
 fi
 
-if [ $homefstype = ext2 ]; then
+if [ "$homefstype" = ext2 ]; then
 	echo "Creating a ext2 filesystem at" $rootfs
-	mkfs.ext2 $homefs 
+	/sbin/mkfs -t ext2 $homefs 
 fi
 
-if [ $homefstype = btrfs ]; then
+if [ "$homefstype" = btrfs ]; then
 	echo "Creating a Btrfs filesystem at" $rootfs
 	filesystemtools="$filesystemtools btrfs-progs"
-	mkfs.btrfs $homefs 
+	/sbin/mkfs -t btrfs $homefs 
 fi
 
-if [ $homefstype = xfs ]; then
+if [ "$homefstype" = xfs ]; then
 	echo "Creating a XFS filesystem at" $rootfs
-	mkfs.xfs $homefs 
+	/sbin/mkfs -t xfs $homefs 
 fi
 
-if [ $homefstype = jfs ]; then
+if [ "$homefstype" = jfs ]; then
 	echo "Creating a JFS filesystem at" $rootfs
-	mkfs.jfs $homefs
+	/sbin/mkfs -t jfs $homefs
 fi
-if [ $homeseperate = yes ]; then
-	/bin/echo "Created home filesystem"
+if [ "$homeseperate" = yes ]; then
+		/bin/echo "Created home filesystem"
+		/bin/mount $rootfs /mnt
+		/bin/mkdir /mnt/home
+		/bin/mount $homefs /mnt/home
+	else
+		/bin/mount $rootfs /mnt
 fi
+
+/bin/mkdir /mnt/boot
+/bin/mount /dev/"$installdrive"1 /mnt/boot
+
+/bin/echo "Partitioning is done!"
