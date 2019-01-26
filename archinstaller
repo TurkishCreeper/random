@@ -33,15 +33,15 @@ if [ $sizeofdrive \< 20 ];
 			echo "WARNING: Drive is smaller then 20G, A bigger drive is recommended, installing anyway.";
 fi;
 
-if [ $sizeofdrive \> 32 ];
-then
-	/bin/echo -n "Should /home be seperate? Type y or n (Nothing else) [Y/n] "
-	read homeseperate
+if [ 80 \> $sizeofdrive ]; then
+		/bin/echo -n "Should /home be seperate? Type y or n (Nothing else) [Y/n] "
+		read homeseperate
 	
-	if [ $homeseperate != n ];  then
-			homeseperate=yes
-		else homeseperate=no
-	fi
+		if [ $homeseperate != n ];  then
+				homeseperate=yes
+			else homeseperate=no
+		fi
+	else homeseperate=no
 fi
 
 if [ $homeseperate = yes ]; then
@@ -50,8 +50,9 @@ else
    echo "/home: Not seperate"
 fi
 
-/bin/echo -n "This is the last warning!  The installer will start installing on /dev/" $installdrive " in 10 seconds"
+/bin/echo "This is the last warning!  The installer will start installing on /dev/"$installdrive" in 10 seconds"
 /bin/sleep 10
+/bin/echo ""
 
 /usr/sbin/parted /dev/$installdrive mklabel gpt 
 /usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 0% 550MiB 
