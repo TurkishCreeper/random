@@ -1,7 +1,6 @@
 #!/bin/bash
 /bin/echo "WARNING: This installer isn't complete! Do NOT use for actual system installers for now"
-/bin/echo "TCreeper's Unofficial ArchInstaller 0.1
-"
+/bin/echo "TCreeper's Unofficial ArchInstaller 0.1"
 
 cd /usr/share/kbd/keymaps/i386 && ls --color=auto */*.map.gz
 /bin/echo ""
@@ -10,14 +9,14 @@ read keymap
 /bin/echo "Chosen keymap: " $keymap && cd 
 /usr/bin/loadkeys $keymap || { /bin/echo "ERROR: Wrong keyboard layout"; exit 1; }
 ls /sys/firmware/efi/efivars &>/dev/null || { /bin/echo "ERROR: System is booted in BIOS or CSM mode. \
-This tool only works in UEFI, if your system is UEFI capable, try disabling \"Legacy Support\" or \"Compatibility Support Module (CSM)\""; exit 1 }
+This tool only works in UEFI, if your system is UEFI capable, try disabling \"Legacy Support\" or \"Compatibility Support Module (CSM)\""; exit 1; }
 
 /bin/echo "Boot mode: UEFI"
 /bin/echo "Synchronizing system clock" && timedatectl set-ntp true
-/bin/ping 1.1.1.1 -c1 || { /bin/echo "ERROR: Network not available"; exit 1 }
+/bin/ping 1.1.1.1 -c1 || { /bin/echo "ERROR: Network not available"; exit 1; }
 /bin/echo "Network: Available"
 /sbin/fdisk -l 
-/bin/echo "!!This installer cannot dualboot!! !!The WHOLE drive would be used!! (wait 2 seconds)" && sleep 2
+/bin/echo "!!This installer cannot dualboot!! !!The WHOLE drive would be used!! (wait 5 seconds)" && sleep 5
 /bin/echo -n "Write the path of the drive you want to install on, then press [ENTER]: /dev/"
 read installdrive
 /bin/echo "Chosen drive: /dev/" $installdrive
@@ -39,23 +38,28 @@ then
 	/bin/echo -n "Should /home be seperate? Type y or n (Nothing else) [Y/n] "
 	read homeseperate
 	
-	if [ $homeseperate != n]; 
-		then
-			homeseperate=yes && echo
-		
-		else
-			homeseperate=no
+	if [ $homeseperate != n ];  then
+			homeseperate=yes
+		else homeseperate=no
 	fi
 fi
 
-if [ $homeseperate = yes]; then
+if [ $homeseperate = yes ]; then
    echo "/home: Seperate from /"
 else
    echo "/home: Not seperate"
 fi
 
-/bin/echo -n "This is the last warning!  The installer will start installing on /dev/" $installdrive " in 5 seconds"
-/bin/sleep 5
+/bin/echo -n "This is the last warning!  The installer will start installing on /dev/" $installdrive " in 10 seconds"
+/bin/sleep 10
 
-# /usr/sbin/parted /dev/$installdrive mklabel gpt 
-# /usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 0% 550MiB 
+/usr/sbin/parted /dev/$installdrive mklabel gpt 
+/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 0% 550MiB 
+
+if [ $homeseperate = yes ]; then
+	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 550MiB 32GiB
+	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 32GiB 100%
+fi
+if [ $homeseperate = no ]; then
+	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 550MiB 100%
+fi 
