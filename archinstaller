@@ -1,16 +1,25 @@
 #!/bin/bash
-/bin/echo "WARNING: This installer isn't complete! Do NOT use for actual system installers for now"
-/bin/echo "TCreeper's Unofficial ArchInstaller 0.1"
+# TCreeper's Unofficial ArchInstaller v0.7
+# What you shouldn't expect from this installer at the moment:
+# Work for BIOS systems, Create LVM or RAID partitions, choose the size of the partitions,
+# Dualboot, encryption and finally.. proper code and syntax
+# I do not recommend you using this script on a physical computer at the moment.
 
-cd /usr/share/kbd/keymaps/i386 && ls --color=auto */*.map.gz
+
+/bin/echo "WARNING: This installer isn't complete! Do NOT use for actual system installers for now."
+/bin/echo "==================================================="
+/bin/echo "~~~~~~TCreeper's Unofficial ArchInstaller 0.7~~~~~~"
+/bin/echo "==================================================="
+
+cd /usr/share/kbd/keymaps/i386 && ls --color=auto */*.map.gz 
 /bin/echo ""
-/bin/echo -n "Write the name of the keyboard layout you want to use, then press [ENTER]: "
+/bin/echo -n "Write the name of the keyboard layout you want to use, then press (Do not include before the ''/'' or the extension ex. trq)[ENTER]: "
 read keymap
 /bin/echo "Chosen keymap: " $keymap && cd 
 /usr/bin/loadkeys $keymap || { /bin/echo "ERROR: Wrong keyboard layout"; exit 1; }
+
 ls /sys/firmware/efi/efivars &>/dev/null || { /bin/echo "ERROR: System is booted in BIOS or CSM mode. \
 This tool only works in UEFI, if your system is UEFI capable, try disabling \"Legacy Support\" or \"Compatibility Support Module (CSM)\""; exit 1; }
-
 /bin/echo "Boot mode: UEFI"
 /bin/echo "Synchronizing system clock" && timedatectl set-ntp true
 /bin/ping 1.1.1.1 -c1 || { /bin/echo "ERROR: Network not available"; exit 1; }
@@ -23,14 +32,11 @@ read installdrive
 
 sizeofdrive=$( /bin/df -h /dev/$installdrive --output=size -BG | sed -n 2p | tr -d 'G' )
 
-if [ $sizeofdrive \< 20 ];
-	then
-  	 if [ $sizeofdrive \< 8 ];
-   			then
+if [ $sizeofdrive \< 20 ]; then
+  	 if [ $sizeofdrive \< 8 ]; then
    				echo "ERROR: Drive is smaller then 8G, aborting, if you want to continue remove this line"; exit 1
    	fi
-		else
-			echo "WARNING: Drive is smaller then 20G, A bigger drive is recommended, installing anyway.";
+		else echo "WARNING: Drive is smaller then 20G, A bigger drive is recommended, installing anyway.";
 fi;
 
 if [ 80 \< $sizeofdrive ]; then
@@ -45,10 +51,19 @@ if [ 80 \< $sizeofdrive ]; then
 fi
 
 if [ $homeseperate = yes ]; then
-   echo "/home: Seperate from /"
-else
-   echo "/home: Not seperate"
+   		echo "/home: Seperate from root" && sleep 1
+	else echo "/home: Not seperate from root" && sleep 1
 fi
+
+/bin/echo -n "Is your cpu AMD or Intel, leave blank if other, all lowercase (ex. intel): "
+read microcodeis
+if [ $microcodeis = amd ]; then
+	microcode="amd-ucode.img"
+fi
+if [ $microcodeis = intel ]; then
+	microcode="intel-ucode.img"
+fi
+/bin/echo "Microcode: $microcode"
 
 /bin/echo "This is the last warning!  The installer will start installing on /dev/"$installdrive" in 10 seconds"
 /bin/sleep 10
@@ -95,68 +110,30 @@ fi
 filesystemtools="$filesystemtools dosfstools"
 /usr/sbin/mkfs.fat -F32 /bin/"$installdrive"1
 
-if [ "$rootfstype" = ext4 ]; then
-	echo "Creating a ext4 filesystem at" $rootfs
-	/sbin/mkfs -t ext4 $rootfs 
-fi
-
-if [ "$rootfstype" = ext3 ]; then
-	echo "Creating a ext3 filesystem at" $rootfs
-	/sbin/mkfs -t ext3 $rootfs
-fi
-
-if [ "$rootfstype" = ext2 ]; then
-	echo "Creating a ext2 filesystem at" $rootfs
-	/sbin/mkfs -t ext2 $rootfs 
-fi
-
 if [ "$rootfstype" = btrfs ]; then
-	echo "Creating a BTRFS filesystem at" $rootfs
-	filesystemtools="$filesystemtools btrfs-progs"
-	/sbin/mkfs -t btrfs $rootfs
-fi
-
-if [ "$rootfstype" = xfs ]; then
-	/sbin/mkfs -t xfs $rootfs 
-fi
-
-if [ "$rootfstype" = jfs ]; then
-	/sbin/mkfs -t jfs $rootfs 
-fi
-/bin/echo "Created Root filesystem."
-
-if [ "$homefstype" = ext4 ]; then
-	echo "Creating a ext4 filesystem at" $rootfs
-	/sbin/mkfs -t ext4 $homefs
-fi
-
-if [ "$homefstype" = ext3 ]; then
-	echo "Creating a ext3 filesystem at" $rootfs
-	/sbin/mkfs -t ext3 $homefs
-fi
-
-if [ "$homefstype" = ext2 ]; then
-	echo "Creating a ext2 filesystem at" $rootfs
-	/sbin/mkfs -t ext2 $homefs 
+		echo "Creating a Btrfs filesystem at " $rootfs
+		filesystemtools="$filesystemtools btrfs-progs"
+		/sbin/mkfs -t btrfs $rootfs
+		/bin/echo "Created Root filesystem."
+	else
+		echo "Creating a '$rootfstype' filesystem at " $rootfs
+		/sbin/mkfs -t $rootfstype $rootfs
+		/bin/echo "Created Root filesystem."
 fi
 
 if [ "$homefstype" = btrfs ]; then
-	echo "Creating a Btrfs filesystem at" $rootfs
-	filesystemtools="$filesystemtools btrfs-progs"
-	/sbin/mkfs -t btrfs -f $homefs 
+		echo "Creating a Btrfs filesystem at" $homefs
+		filesystemtools="$filesystemtools btrfs-progs"
+		/sbin/mkfs -t btrfs -f $homefs
+		/bin/echo "Created home filesystem"
+	else
+		echo "Creating a '$homefstype' filesystem at " $homefs
+		/sbin/mkfs -t $homefstype $homefs
+		/bin/echo "Created home filesystem"		
 fi
 
-if [ "$homefstype" = xfs ]; then
-	echo "Creating a XFS filesystem at" $rootfs
-	/sbin/mkfs -t xfs $homefs 
-fi
-
-if [ "$homefstype" = jfs ]; then
-	echo "Creating a JFS filesystem at" $rootfs
-	/sbin/mkfs -t jfs $homefs
 fi
 if [ "$homeseperate" = yes ]; then
-		/bin/echo "Created home filesystem"
 		/bin/mount $rootfs /mnt
 		/bin/mkdir /mnt/home
 		/bin/mount $homefs /mnt/home
@@ -168,3 +145,65 @@ fi
 /bin/mount /dev/"$installdrive"1 /mnt/boot
 
 /bin/echo "Partitioning is done!"
+/bin/echo "If you want more packages to be installed add them now, if you don't leave it blank (base base-devel and pacman-contrib will be installed by default)"
+/bin/echo -n "Seperate with spaces, to finish press [ENTER]: "
+read extrapackages
+/bin/echo "Installing the system"
+/bin/pacstrap /mnt base base-devel $filesystemtools pacman-contrib $extrapackages
+/bin/echo "Creating fstab via genfstab"
+/bin/genfstab -U /mnt >> /mnt/etc/fstab
+/bin/echo ""
+/bin/cat "/mnt/etc/fstab"
+/bin/echo ""
+/bin/arch-chroot /mnt hwclock --systohc
+
+# Set up /etc/hosts
+/bin/arch-chroot /mnt echo "127.0.0.1 localhost" >> /etc/hosts
+/bin/arch-chroot /mnt echo "127.0.0.1 localhost.localdomain" >> /etc/hosts
+/bin/arch-chroot /mnt echo "127.0.0.1 local" >> /etc/hosts
+/bin/arch-chroot /mnt echo "255.255.255.255 broadcasthost" >> /etc/hosts
+/bin/arch-chroot /mnt echo "::1 localhost" >> /etc/hosts
+/bin/arch-chroot /mnt echo "::1 ip6-localhost" >> /etc/hosts
+/bin/arch-chroot /mnt echo "::1 ip6-loopback" >> /etc/hosts
+/bin/arch-chroot /mnt echo "fe80::1%lo0 localhost" >> /etc/hosts
+/bin/arch-chroot /mnt echo "ff00::0 ip6-localnet" >> /etc/hosts
+/bin/arch-chroot /mnt echo "ff00::0 ip6-mcastprefix" >> /etc/hosts
+/bin/arch-chroot /mnt echo "ff02::1 ip6-allnodes" >> /etc/hosts
+/bin/arch-chroot /mnt echo "ff02::2 ip6-allrouters" >> /etc/hosts
+/bin/arch-chroot /mnt echo "ff02::3 ip6-allhosts" >> /etc/hosts
+/bin/arch-chroot /mnt echo "0.0.0.0 0.0.0.0" >> /etc/hosts
+/bin/arch-chroot /mnt echo "0.0.0.0 0.0.0.0" >> /etc/hosts
+
+# Rebuild the initramfs
+/bin/arch-chroot /mnt mkinitcpio -p linux
+
+# Enable firstboot for configuration
+/bin/arch-chroot /mnt systemctl enable systemd-firstboot.service
+
+# Install systemd-boot
+/bin/arch-chroot /mnt bootctl --path=/boot install
+# Create a pacman hook to auto-update systemd-boot when a systemd update occurs
+/bin/arch-chroot /mnt echo "[Trigger]" >> /etc/pacman.d/hooks/100-systemd-boot.hook
+/bin/arch-chroot /mnt echo "Type = package" >> /etc/pacman.d/hooks/100-systemd-boot.hook
+/bin/arch-chroot /mnt echo "Operation = Upgrade" >> /etc/pacman.d/hooks/100-systemd-boot.hook
+/bin/arch-chroot /mnt echo "Target = systemd" >> /etc/pacman.d/hooks/100-systemd-boot.hook
+/bin/arch-chroot /mnt echo "" >> /etc/pacman.d/hooks/100-systemd-boot.hook
+/bin/arch-chroot /mnt echo "[Action]" >> /etc/pacman.d/hooks/100-systemd-boot.hook
+/bin/arch-chroot /mnt echo "Description = Upgrading systemd-boot" >> /etc/pacman.d/hooks/100-systemd-boot.hook
+/bin/arch-chroot /mnt echo "When = PostTransaction" >> /etc/pacman.d/hooks/100-systemd-boot.hook
+/bin/arch-chroot /mnt echo "Exec = /usr/bin/bootctl update" >> /etc/pacman.d/hooks/100-systemd-boot.hook
+
+# Set up systemd-boots configuration files 
+/bin/arch-chroot /mnt mkdir -p /boot/loader/entries
+/bin/arch-chroot /mnt echo "default  arch" >> /boot/loader/loader.conf
+/bin/arch-chroot /mnt echo "timeout 4" >> /boot/loader/loader.conf
+
+/bin/arch-chroot /mnt echo "title	Arch Linux" >> /boot/loader/entries/arch.conf
+/bin/arch-chroot /mnt echo "linux	/vmlinuz-linux" >> /boot/loader/entries/arch.conf
+/bin/arch-chroot /mnt echo "initrd	/$microcode" >> /boot/loader/entries/arch.conf
+/bin/arch-chroot /mnt echo "initrd	/initramfs-linux.img" >> /boot/loader/entries/arch.conf
+
+/bin/echo -n "Enter xtra boot options, leave blank if none. (ex. 'pci=nomsi nomodeset' ): "
+read extrabootflags
+
+/bin/arch-chroot /mnt echo "options	rw root=$rootfs $extrabootflags" >> /boot/loader/entries/arch.conf
