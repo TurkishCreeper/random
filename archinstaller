@@ -13,7 +13,7 @@
 
 cd /usr/share/kbd/keymaps/i386 && ls --color=auto */*.map.gz 
 /bin/echo -n "Write the name of the keyboard layout you want to use, then press (Do not include before the /' or the extension example: trq)[ENTER]: "
-read keymap
+read keymap 
 clear
 /bin/echo "Chosen keymap: " $keymap && cd 
 /usr/bin/loadkeys $keymap || { /bin/echo "ERROR: Wrong keyboard layout"; exit 1; }
@@ -24,13 +24,13 @@ This tool only works in UEFI, if your system is UEFI capable, try disabling \"Le
 /bin/echo "Synchronizing system clock" && timedatectl set-ntp true
 /bin/ping 1.1.1.1 -c1 || { /bin/echo "ERROR: Network not available"; exit 1; }
 /bin/echo "Network: Available"
-/sbin/fdisk -l 
+/sbin/fdisk -l && 
 /bin/echo "!! This installer cannot dualboot !! !! The WHOLE drive would be used !! (Wait 5 seconds)" && sleep 5
-/bin/echo -n "Write the path of the drive you want to install on, then press [ENTER]: /dev/"
+/bin/echo -n "Write the path of the **drive** you want to install on, then press [ENTER]: /dev/"
 read installdrive
 /bin/echo "Chosen drive: /dev/" $installdrive
 
-sizeofdrive=$( /bin/df -h /dev/$installdrive --output=size -BG | sed -n 2p | tr -d 'G' )
+sizeofdrive=$( /bin/df -h /dev/$installdrive --output=size -BG | sed -n 2p | tr -d 'G' ) &&
 
 if [ $sizeofdrive \< 20 ]; then
   	 if [ $sizeofdrive \< 8 ]; then
@@ -72,36 +72,36 @@ clear
 /bin/umount /mnt/home/ &> /dev/null && echo "Installation Home unmounted"
 /bin/umount /mnt/ &> /dev/null && echo "Installation root unmounted"
 
-/usr/sbin/parted /dev/$installdrive mklabel gpt 
-/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 0% 550MiB 
-/usr/sbin/parted /dev/$install drive set 1 boot on
-/usr/sbin/parted /dev/$install drive set 1 esp on
+/usr/sbin/parted /dev/$installdrive mklabel gpt &&
+/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 0% 550MiB &&
+/usr/sbin/parted /dev/$installdrive set 1 boot on &&
+/usr/sbin/parted /dev/$installdrive set 1 esp on &&
 
 if [ $homeseperate = yes ]; then
-	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 550MiB 32GiB
-	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 32GiB 100%
+	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 550MiB 32GiB &&
+	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 32GiB 100% &&
 	/bin/echo -n "What filesystem do you want / to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS]: "
 	read rootfstype
-	rootfstype=${rootfstype,,}
+	rootfstype=${rootfstype,,} &&
 	if ! { [ "$rootfstype" = ext4 ] || [ "$rootfstype" = ext3  ] || [ "$rootfstype" = ext2 ] || [ "$rootfstype" = btrfs ] || [ "$rootfstype" = jfs ] || [ "$rootfstype" = xfs ] || [ "$rootfstype" = reiserfs ]; }; then
 		/bin/echo "Wrong filesystem type"; exit 1	
 	fi
 	/bin/echo -n "What filesystem do you want /home to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS]: "
 	read homefstype
-	homefstype=${homefstype,,}
+	homefstype=${homefstype,,} &&
 	if ! { [ "$homefstype" = ext4 ] || [ "$homefstype" = ext3  ] || [ "$homefstype" = ext2 ] || [ "$homefstype" = btrfs ] || [ "$homefstype" = jfs ] || [ "$homefstype" = xfs ] || [ "$homefstype" = reiserfs ]; }; then
 		/bin/echo "Wrong filesystem type"; exit 1	
 	fi
 	/bin/echo "/home Filesytem:" $homefstype
 	rootfs="/dev/$installdrive"2
-	homefs="/dev/$installdrive"3
+	homefs="/dev/$installdrive"3 
 fi
 
 if [ $homeseperate = no ]; then
 	/usr/sbin/parted -a optimal /dev/$installdrive mkpart primary 550MiB 100%
 	/bin/echo -n "What filesystem do you want / to be? [ext4/ext3/ext2/Btrfs/XFS/JFS/ReiserFS]: "
 	read rootfstype
-	rootfstype=${rootfstype,,}
+	rootfstype=${rootfstype,,} &&
 	if ! { [ "$rootfstype" = ext4 ] || [ "$rootfstype" = ext3  ] || [ "$rootfstype" = ext2 ] || [ "$rootfstype" = btrfs ] || [ "$rootfstype" = jfs ] || [ "$rootfstype" = xfs ] || [ "$rootfstype" = reiserfs ]; }; then
 		/bin/echo "Wrong filesystem type"; exit 1	
 	fi
@@ -111,29 +111,29 @@ fi
 
 /bin/echo "Root Filesystem:" $rootfstype
 
-/bin/echo "Creating a FAT32 filesystem fro the ESP.."
+/bin/echo "Creating a FAT32 filesystem for the ESP.."
 filesystemtools="$filesystemtools dosfstools"
-/usr/sbin/mkfs.fat -F32 /bin/"$installdrive"1
+/usr/sbin/mkfs.fat -F32 /dev/"$installdrive"1 &&
 
 if [ "$rootfstype" = btrfs ]; then
 		echo "Creating a Btrfs filesystem at $rootfs"
 		filesystemtools="$filesystemtools btrfs-progs"
-		/sbin/mkfs -t btrfs -f $rootfs
+		/sbin/mkfs -t btrfs -f $rootfs &&
 		/bin/echo "Created Root filesystem."
 	else
 		echo "Creating a '$rootfstype' filesystem at $rootfs"
-		/sbin/mkfs -t $rootfstype $rootfs
+		/sbin/mkfs -t $rootfstype $rootfs &&
 		/bin/echo "Created Root filesystem."
 fi
 
 if [ "$homefstype" = btrfs ]; then
 		echo "Creating a Btrfs filesystem at $homefs"
 		filesystemtools="$filesystemtools btrfs-progs"
-		/sbin/mkfs -t btrfs -f $homefs
+		/sbin/mkfs -t btrfs -f $homefs &&
 		/bin/echo "Created home filesystem"
 	else
 		echo "Creating a '$homefstype' filesystem at  $homefs"
-		/sbin/mkfs -t $homefstype $homefs
+		/sbin/mkfs -t $homefstype $homefs &&
 		/bin/echo "Created home filesystem"		
 fi
 
