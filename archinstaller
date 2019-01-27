@@ -1,15 +1,15 @@
 #!/bin/bash
-# TCreeper's Unofficial ArchInstaller v0.7
+# TCreeper's Unofficial ArchInstaller v0.9
 # What you shouldn't expect from this installer at the moment:
 # Work for BIOS systems, Create LVM or RAID partitions, choose the size of the partitions,
 # Dualboot, encryption and finally.. proper code and syntax
 # I do not recommend you using this script on a physical computer at the moment.
 
 
-/bin/echo "WARNING: This installer isn't complete! Do NOT use for actual system installers for now."
-/bin/echo "===================================================" && sleep 0.1
-/bin/echo "~~~~~~TCreeper's Unofficial ArchInstaller 0.7~~~~~~" && sleep 0.1
-/bin/echo "===================================================" && sleep 0.1
+/bin/echo "WARNING: This installer isn't stable! Do NOT use for actual system installers for now."
+/bin/echo "===========================================================" && sleep 0.1
+/bin/echo "~~~~~~TCreeper's Unofficial ArchInstaller version 0.9~~~~~~" && sleep 0.1
+/bin/echo "===========================================================" && sleep 0.1
 
 cd /usr/share/kbd/keymaps/i386 && ls --color=auto */*.map.gz 
 /bin/echo -n "Write the name of the keyboard layout you want to use, then press (Do not include before the /' or the extension example: trq)[ENTER]: "
@@ -58,10 +58,10 @@ fi
 /bin/echo -n "Is your cpu AMD or Intel, leave blank if other, all lowercase (ex. intel): "
 read microcodeis
 if [ $microcodeis = amd ]; then
-	microcode="amd-ucode.img"
+	microcode="amd-ucode"
 fi
 if [ $microcodeis = intel ]; then
-	microcode="intel-ucode.img"
+	microcode="intel-ucode"
 fi
 /bin/echo "Microcode: $microcode"
 
@@ -182,6 +182,9 @@ read extrapackages
 /bin/arch-chroot /mnt mkinitcpio -p linux
 
 # Enable firstboot for configuration
+/bin/arch-chroot /mnt rm /etc/{machine-id,localtime,hostname,shadow,locale.conf}
+/bin/arch-chroot /mnt "echo [Install] >> /usr/lib/systemd/system/systemd-firstboot.service"
+/bin/arch-chroot /mnt "echo WantedBy=sysinit.target >> /usr/lib/systemd/system/systemd-firstboot.service"
 /bin/arch-chroot /mnt systemctl enable systemd-firstboot.service
 
 # Install systemd-boot
@@ -190,15 +193,15 @@ read extrapackages
 # Create a pacman hook to auto-update systemd-boot when a systemd update occurs
 /bin/arch-chroot /mnt mkdir -p /etc/pacman.d/hooks/
 /bin/arch-chroot /mnt /etc/pacman.d/hooks/100-systemd-boot.hook
-/bin/arch-chroot /mnt echo "[Trigger]" >> /etc/pacman.d/hooks/100-systemd-boot.hook
-/bin/arch-chroot /mnt echo "Type = package" >> /etc/pacman.d/hooks/100-systemd-boot.hook
-/bin/arch-chroot /mnt echo "Operation = Upgrade" >> /etc/pacman.d/hooks/100-systemd-boot.hook
-/bin/arch-chroot /mnt echo "Target = systemd" >> /etc/pacman.d/hooks/100-systemd-boot.hook
-/bin/arch-chroot /mnt echo "" >> /etc/pacman.d/hooks/100-systemd-boot.hook
-/bin/arch-chroot /mnt echo "[Action]" >> /etc/pacman.d/hooks/100-systemd-boot.hook
-/bin/arch-chroot /mnt echo "Description = Upgrading systemd-boot" >> /etc/pacman.d/hooks/100-systemd-boot.hook
-/bin/arch-chroot /mnt echo "When = PostTransaction" >> /etc/pacman.d/hooks/100-systemd-boot.hook
-/bin/arch-chroot /mnt echo "Exec = /usr/bin/bootctl update" >> /etc/pacman.d/hooks/100-systemd-boot.hook
+/bin/arch-chroot /mnt "echo [Trigger] >> /etc/pacman.d/hooks/100-systemd-boot.hook"
+/bin/arch-chroot /mnt "echo Type = package >> /etc/pacman.d/hooks/100-systemd-boot.hook"
+/bin/arch-chroot /mnt "echo Operation = Upgrade >> /etc/pacman.d/hooks/100-systemd-boot.hook"
+/bin/arch-chroot /mnt "echo Target = systemd >> /etc/pacman.d/hooks/100-systemd-boot.hook"
+/bin/arch-chroot /mnt "echo  >> /etc/pacman.d/hooks/100-systemd-boot.hook"
+/bin/arch-chroot /mnt "echo [Action] >> /etc/pacman.d/hooks/100-systemd-boot.hook"
+/bin/arch-chroot /mnt "echo Description = Upgrading systemd-boot >> /etc/pacman.d/hooks/100-systemd-boot.hook"
+/bin/arch-chroot /mnt "echo When = PostTransaction >> /etc/pacman.d/hooks/100-systemd-boot.hook"
+/bin/arch-chroot /mnt "echo Exec = /usr/bin/bootctl update >> /etc/pacman.d/hooks/100-systemd-boot.hook"
 
 # Set up systemd-boots configuration files 
 /bin/arch-chroot /mnt mkdir -p /boot/loader/entries
@@ -208,12 +211,20 @@ read extrapackages
 
 /bin/arch-chroot /mnt touch /boot/loader/entries/arch.conf
 /bin/arch-chroot /mnt mkdir -p /boot/loader/entries/
-/bin/arch-chroot /mnt echo "title	Arch Linux" >> /boot/loader/entries/arch.conf
-/bin/arch-chroot /mnt echo "linux	/vmlinuz-linux" >> /boot/loader/entries/arch.conf
-/bin/arch-chroot /mnt echo "initrd	/$microcode" >> /boot/loader/entries/arch.conf
-/bin/arch-chroot /mnt echo "initrd	/initramfs-linux.img" >> /boot/loader/entries/arch.conf
+/bin/arch-chroot /mnt "echo title	Arch Linux >> /boot/loader/entries/arch.conf"
+/bin/arch-chroot /mnt "echo linux	/vmlinuz-linux >> /boot/loader/entries/arch.conf"
+/bin/arch-chroot /mnt "echo initrd	/$microcode.img >> /boot/loader/entries/arch.conf"
+/bin/arch-chroot /mnt "echo initrd	/initramfs-linux.img >> /boot/loader/entries/arch.conf"
 
 /bin/echo -n "Enter extra boot options, leave blank if none. (ex. 'pci=nomsi nomodeset' ): "
 read extrabootflags
 
-/bin/arch-chroot /mnt echo "options	rw root=$rootfs $extrabootflags" >> /boot/loader/entries/arch.conf
+/bin/arch-chroot /mnt "echo options	rw root=$rootfs $extrabootflags >> /boot/loader/entries/arch.conf"
+/bin/echo "Ok i don't know how to do networking so you have to do that yourself, the next boot you will configure hostname, root password, locales and stuff with systemd-firstboot."
+/bin/echo -n "Do you want to enter the chroot (y) or reboot to the new system (n)? [y/n]: "
+read rebootorchroot
+if [ "$rebootorchroot" = n ]; then
+		systemctl reboot
+	else
+		exec arch-chroot /mnt
+fi
