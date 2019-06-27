@@ -44,7 +44,7 @@ msg_n "Write the path of the **drive** you want to install on, then press [ENTER
 read installdrive
 msg "Chosen drive: /dev/$installdrive"
 
-sizeofdrive=$( /bin/df -h /dev/$installdrive --output=size -BG | sed -n 2p | tr -d 'G' ) &&
+sizeofdrive=$( /bin/blockdev --getsize64 "/dev/$installdrive" | numfmt --to=iec-i --sufix=B --format="%.3f" | cut -f 1  -d '.' )
 
 if [ $sizeofdrive \< 20 ]; then
   	 if [ $sizeofdrive \< 4 ]; then
