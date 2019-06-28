@@ -44,7 +44,7 @@ msg_n "Write the path of the **drive** you want to install on, then press [ENTER
 read installdrive
 msg "Chosen drive: /dev/$installdrive"
 
-sizeofdrive=$( /bin/blockdev --getsize64 "/dev/$installdrive" | numfmt --to=iec-i --sufix=B --format="%.3f" | cut -f 1  -d '.' )
+sizeofdrive=$( /bin/blockdev --getsize64 "/dev/$installdrive" | numfmt --to=iec-i --suffix=B --format="%.3f" | cut -f 1  -d '.' )
 
 if [ $sizeofdrive \< 20 ]; then
   	 if [ $sizeofdrive \< 4 ]; then
@@ -145,7 +145,7 @@ if [ "$homefstype" = btrfs ]; then
 		filesystemtools="$filesystemtools btrfs-progs"
 		/sbin/mkfs -t btrfs -f $homefs &&
 		msg "Created home filesystem"
-	else
+elif [ ! -z "$homefstype" ]; then
 		msg "Creating a '$homefstype' filesystem at $homefs"
 		/sbin/mkfs -t $homefstype $homefs &&
 		msg "Created home filesystem"		
@@ -176,64 +176,71 @@ msg "fstab:"
 
 # Set up /etc/hosts
 # Yes this probably is not a good way to put things to a file
-/bin/arch-chroot /mnt 'echo "127.0.0.1 localhost" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "127.0.0.1 localhost.localdomain" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "127.0.0.1 local" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "255.255.255.255 broadcasthost" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "::1 localhost" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "::1 ip6-localhost" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "::1 ip6-loopback" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "fe80::1%lo0 localhost" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "ff00::0 ip6-localnet" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "ff00::0 ip6-mcastprefix" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "ff02::1 ip6-allnodes" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "ff02::2 ip6-allrouters" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "ff02::3 ip6-allhosts" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "0.0.0.0 0.0.0.0" >> /etc/hosts'
-/bin/arch-chroot /mnt 'echo "0.0.0.0 0.0.0.0" >> /etc/hosts'
+msg "Setting up /etc/hosts"
+
+echo "127.0.0.1 localhost" >> /mnt/etc/hosts
+echo "127.0.0.1 localhost.localdomain" >> /mnt/etc/hosts
+echo "127.0.0.1 local" >> /mnt/etc/hosts
+echo "255.255.255.255 broadcasthost" >> /mnt/etc/hosts
+echo "::1 localhost" >> /mnt/etc/hosts
+echo "::1 ip6-localhost" >> /mnt/etc/hosts
+echo "::1 ip6-loopback" >> /mnt/etc/hosts
+echo "fe80::1%lo0 localhost" >> /mnt/etc/hosts
+echo "ff00::0 ip6-localnet" >> /mnt/etc/hosts
+echo "ff00::0 ip6-mcastprefix" >> /mnt/etc/hosts
+echo "ff02::1 ip6-allnodes" >> /mnt/etc/hosts
+echo "ff02::2 ip6-allrouters" >> /mnt/etc/hosts
+echo "ff02::3 ip6-allhosts" >> /mnt/etc/hosts
+echo "0.0.0.0 0.0.0.0" >> /mnt/etc/hosts
+# what is this for? i don't know
+echo "0.0.0.0 0.0.0.0" >> /mnt/etc/hosts
 
 # Rebuild the initramfs
-/bin/arch-chroot /mnt 'mkinitcpio -p linux'
+/bin/arch-chroot /mnt 'mkinitcpio -P'
 
 # Enable firstboot for configuration
-/bin/arch-chroot /mnt 'rm /etc/{machine-id,localtime,hostname,shadow,locale.conf}'
-/bin/arch-chroot /mnt "echo [Install] >> /usr/lib/systemd/system/systemd-firstboot.service"
-/bin/arch-chroot /mnt "echo WantedBy=sysinit.target >> /usr/lib/systemd/system/systemd-firstboot.service"
+msg "Setting up systemd-firstboot"
+rm /mnt/etc/{machine-id,localtime,hostname,shadow,locale.conf}
+echo "[Install]" >> /mnt/usr/lib/systemd/system/systemd-firstboot.service
+echo "WantedBy=sysinit.target" >> /mnt/usr/lib/systemd/system/systemd-firstboot.service
 /bin/arch-chroot /mnt 'systemctl enable systemd-firstboot.service'
 
 # Install systemd-boot
 /bin/arch-chroot /mnt 'bootctl --path=/boot install'
 
 # Create a pacman hook to auto-update systemd-boot when a systemd update occurs
-/bin/arch-chroot /mnt 'mkdir -p /etc/pacman.d/hooks/'
-/bin/arch-chroot /mnt '/etc/pacman.d/hooks/100-systemd-boot.hook'
-/bin/arch-chroot /mnt "echo [Trigger] >> /etc/pacman.d/hooks/100-systemd-boot.hook"
-/bin/arch-chroot /mnt "echo Type = package >> /etc/pacman.d/hooks/100-systemd-boot.hook"
-/bin/arch-chroot /mnt "echo Operation = Upgrade >> /etc/pacman.d/hooks/100-systemd-boot.hook"
-/bin/arch-chroot /mnt "echo Target = systemd >> /etc/pacman.d/hooks/100-systemd-boot.hook"
-/bin/arch-chroot /mnt "echo  >> /etc/pacman.d/hooks/100-systemd-boot.hook"
-/bin/arch-chroot /mnt "echo [Action] >> /etc/pacman.d/hooks/100-systemd-boot.hook"
-/bin/arch-chroot /mnt "echo Description = Upgrading systemd-boot >> /etc/pacman.d/hooks/100-systemd-boot.hook"
-/bin/arch-chroot /mnt "echo When = PostTransaction >> /etc/pacman.d/hooks/100-systemd-boot.hook"
-/bin/arch-chroot /mnt "echo Exec = /usr/bin/bootctl update >> /etc/pacman.d/hooks/100-systemd-boot.hook"
+msg "Setting up systemd-boot pacman hook"
+/bin/mkdir -p /mnt/etc/pacman.d/hooks/
+echo "[Trigger]" >> /mnt/etc/pacman.d/hooks/100-systemd-boot.hook
+echo "Type = package" >> /mnt/etc/pacman.d/hooks/100-systemd-boot.hook
+echo "Operation = Upgrade" >> /mnt/etc/pacman.d/hooks/100-systemd-boot.hook
+echo "Target = systemd" >> /mnt/etc/pacman.d/hooks/100-systemd-boot.hook
+echo "" >> /mnt/etc/pacman.d/hooks/100-systemd-boot.hook
+echo "[Action]" >> /mnt/etc/pacman.d/hooks/100-systemd-boot.hook
+echo "Description = Upgrading systemd-boot" >> /mnt/etc/pacman.d/hooks/100-systemd-boot.hook
+echo "When = PostTransaction" >> /mnt/etc/pacman.d/hooks/100-systemd-boot.hook
+echo "Exec = /usr/bin/bootctl update" >> /mnt/etc/pacman.d/hooks/100-systemd-boot.hook
 
 # Set up systemd-boots configuration files 
-/bin/arch-chroot /mnt 'mkdir -p /boot/loader/entries'
-/bin/arch-chroot /mnt 'touch /boot/loader/loader.conf'
-/bin/arch-chroot /mnt 'echo "default  arch" >> /boot/loader/loader.conf'
-/bin/arch-chroot /mnt 'echo "timeout 4" >> /boot/loader/loader.conf'
+/bin/mkdir -p /mnt/boot/loader/entries
+/bin/touch /mnt/boot/loader/loader.conf
+msg "Setting up /boot/loader/loader.conf"
+/bin/echo "default  arch" >> /mnt/boot/loader/loader.conf
+/bin/echo "timeout 4" >> /mnt/boot/loader/loader.conf
 
-/bin/arch-chroot /mnt 'touch /boot/loader/entries/arch.conf'
-/bin/arch-chroot /mnt 'mkdir -p /boot/loader/entries/'
-/bin/arch-chroot /mnt "echo title	Arch Linux >> /boot/loader/entries/arch.conf"
-/bin/arch-chroot /mnt "echo linux	/vmlinuz-linux >> /boot/loader/entries/arch.conf"
-/bin/arch-chroot /mnt "echo initrd	/$microcode.img >> /boot/loader/entries/arch.conf"
-/bin/arch-chroot /mnt "echo initrd	/initramfs-linux.img >> /boot/loader/entries/arch.conf"
+/bin/mkdir -p /mnt/boot/loader/entries/
+/bin/touch /mnt/boot/loader/entries/arch.conf
+msg "Setting up /boot/loader/entries/arch.conf"
+/bin/echo "title	Arch Linux" >> /mnt/boot/loader/entries/arch.conf
+/bin/echo "linux	/vmlinuz-linux" >> /mnt/boot/loader/entries/arch.conf
+/bin/echo "initrd	/$microcode.img" >> /mnt/boot/loader/entries/arch.conf
+/bin/echo "initrd	/initramfs-linux.img" >> /mnt/boot/loader/entries/arch.conf
 
 msg_n "Enter extra boot options, leave blank if none. (ex. 'pci=nomsi nomodeset' ): "
 read extrabootflags
+msg "Boot options:"
+/bin/echo "options	rw root=$rootfs $extrabootflags" >> /mnt/boot/loader/entries/arch.conf
 
-/bin/arch-chroot /mnt "echo options	rw root=$rootfs $extrabootflags >> /boot/loader/entries/arch.conf"
 msg "Ok i don't know how to do networking so you have to do that yourself, the next boot you will configure hostname, root password, locales and stuff with systemd-firstboot."
 msg_n "Do you want to enter the chroot (y) or reboot to the new system (n)? [y/n]: "
 read rebootorchroot
